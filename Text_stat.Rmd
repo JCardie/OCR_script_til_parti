@@ -1,0 +1,189 @@
+---
+title: "Tekst_stat"
+author: "Jonas"
+date: "11/24/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+
+```
+Vi har spurgt 100 mænd, og 100 kvinder om der er for få toiletter på matematisk institut. Fem kvinder og ti mænd svarer ja til sprøgsmålet. Men er der så faktisk forskel på mænd og kvinder på baggrund af undersøgelsen?  
+Vi vælger derfor at teste hypotesen: "Andelen af mænd og kvinder der mener at der er for få toiletter på matematisk institut er den samme"
+Mod alternativhypotesen "andelen af mænd og kvinder der mener at der er for få toiletter på matematisk institut er forskellige"
+Med et signifikans-niveau på 0.05
+```{r}
+prop.test(c(5, 10), c(100, 100), alternative = c("two.sided"))
+```
+Hvis p-værdien er under 0.05 forkastes hypotesen, og der er altså statistisk signifikans for alternativhypotesen. I dette tilfælde er p-værdien 0.28, og man ville altså ikke kunne konkludere at der var forkel på om hhv. mænd og kvinder mener at der er for få toiletter på matematisk institut.
+Lad os nu lave samme forsøg på BSS. Her spørger vi 1000 mænd og 1000 kvinder. 50 kvinder og 100 mænd svarer ja, altså den samme andel af kvinder og mænd som i forrige forsøg, men er der statistisk signifikans for forskellen nu?
+
+```{r}
+prop.test(c(50, 100), c(1000, 1000), alternative = c("two.sided"))
+```
+Nu er p-værdien meget lille, og man ville altså kunne konkludere at der var forskel på andelen af hhv. mænd og kvinder, der mener at der er for få toiletter på matematisk institut, selvom det er de samme andele der har svaret ja. Dette handler om stikprøvestørrelsen.
+
+```{r}
+data <- read.csv("Parti_ud_slut.csv")
+data_efter_1995 <- subset(data, data$År_int>1994)
+```
+
+
+```{r}
+data_efter_1995 %>%
+  filter(Parti == "dansk-folkeparti") -> df_efter_1995
+```
+
+```{r}
+data_efter_1995 %>%
+  filter(Parti == "venstre") -> V_efter_1995
+```
+
+```{r}
+data_efter_1995 %>%
+  filter(Parti == "socialdemokratiet") -> S_efter_1995
+```
+
+```{r}
+df_efter_1995 %>%
+  unnest_tokens(word, Tale) %>%
+  filter(str_detect(word, "indvandr[a-zæøå]*")) -> df_indvandrer_ord
+```
+
+```{r}
+df_efter_1995 %>%
+  unnest_tokens(word, Tale) -> df_ord
+```
+
+```{r}
+df_antal_indvandrer_ord <-length(df_indvandrer_ord$X)
+df_antal_ord <-length(df_ord$X)
+```
+
+```{r}
+V_efter_1995 %>%
+  unnest_tokens(word, Tale) %>%
+  filter(str_detect(word, "indvandr[a-zæøå]*")) -> V_indvandrer_ord
+```
+
+```{r}
+V_efter_1995 %>%
+  unnest_tokens(word, Tale) -> V_ord
+```
+
+```{r}
+V_antal_indvandrer_ord <- length(V_indvandrer_ord$X)
+V_antal_ord <- length(V_ord$X)
+```
+
+```{r}
+prop.test(c(df_antal_indvandrer_ord, V_antal_indvandrer_ord), c(df_antal_ord, V_antal_ord), alternative = c("greater"))
+```
+
+```{r}
+S_efter_1995 %>%
+  unnest_tokens(word, Tale) %>%
+  filter(str_detect(word, "indvandr[a-zæøå]*")) -> S_indvandrer_ord
+```
+
+```{r}
+S_efter_1995 %>%
+  unnest_tokens(word, Tale) -> S_ord
+```
+
+```{r}
+S_antal_indvandrer_ord <- length(S_indvandrer_ord$X)
+S_antal_ord <- length(S_ord$X)
+```
+
+```{r}
+prop.test(c(S_antal_indvandrer_ord, V_antal_indvandrer_ord), c(S_antal_ord, V_antal_ord))
+```
+Hvad nu hvis vi ville kigge på tendenser i taler?
+
+Først skal vi have trukket andelen af ord der handler om indvandring ud af hver tale? Jeg starter med df:
+```{r}
+df_indvandring_andel_tale <- c()
+for(i in 1:length(df_efter_1995$X)) {
+  tale <- df_efter_1995[i,]
+  antal_indvandre_ord <- length(str_extract_all(tale$Tale, "indvandr[a-zæøå]*")[[1]])
+  tale %>%
+    unnest_tokens(word, Tale) -> tale_ord
+  tale_antal_ord <- length(tale_ord$X)
+  andel_indvandre_ord <- antal_indvandre_ord/tale_antal_ord 
+  df_indvandring_andel_tale <- append(df_indvandring_andel_tale, andel_indvandre_ord)
+}
+```
+
+```{r}
+df_indvandring_andel_tale
+```
+```{r}
+S_indvandring_andel_tale <- c()
+for(i in 1:length(S_efter_1995$X)) {
+  tale <- S_efter_1995[i,]
+  antal_indvandre_ord <- length(str_extract_all(tale$Tale, "indvandr[a-zæøå]*")[[1]])
+  tale %>%
+    unnest_tokens(word, Tale) -> tale_ord
+  tale_antal_ord <- length(tale_ord$X)
+  andel_indvandre_ord <- antal_indvandre_ord/tale_antal_ord 
+  S_indvandring_andel_tale <- append(S_indvandring_andel_tale, andel_indvandre_ord)
+}
+```
+
+```{r}
+S_indvandring_andel_tale
+```
+
+```{r}
+V_indvandring_andel_tale <- c()
+for(i in 1:length(V_efter_1995$X)) {
+  tale <- V_efter_1995[i,]
+  antal_indvandre_ord <- length(str_extract_all(tale$Tale, "indvandr[a-zæøå]*")[[1]])
+  tale %>%
+    unnest_tokens(word, Tale) -> tale_ord
+  tale_antal_ord <- length(tale_ord$X)
+  andel_indvandre_ord <- antal_indvandre_ord/tale_antal_ord 
+  V_indvandring_andel_tale <- append(V_indvandring_andel_tale, andel_indvandre_ord)
+}
+```
+
+```{r}
+S_indvandring_andel_tale
+```
+```{r}
+observed <- mean(df_indvandring_andel_tale) - mean(V_indvandring_andel_tale)
+V_og_df_andel_tale <- c(df_indvandring_andel_tale, V_indvandring_andel_tale)
+length(V_og_df_andel_tale)
+N <- 10^4-1
+result <- numeric(N)
+for (i in 1:N){
+  index <- sample(112, size = 53, replace = FALSE)
+  result[i] <- mean(V_og_df_andel_tale[index])-mean(V_og_df_andel_tale[-index])
+}
+hist(result, xlab = "Forskel i gennemsnit", main = "Permutationsfordeling for df og venstre")
+abline(v = observed, col="seagreen2")
+(sum(result >= observed)+1)/(N+1)
+```
+```{r}
+observed <- mean(S_indvandring_andel_tale) - mean(V_indvandring_andel_tale)
+S_og_V_andel_tale <- c(S_indvandring_andel_tale, V_indvandring_andel_tale)
+N <- 10^4-1
+result <- numeric(N)
+for (i in 1:N){
+  index <- sample(114, size = 85, replace = FALSE)
+  result[i] <- mean(S_og_V_andel_tale[index])-mean(S_og_V_andel_tale[-index])
+}
+hist(result, xlab = "Forskel i gennemsnit", main = "Permutationsfordeling for Socaldemokratiet og Venstre")
+abline(v = observed, col="seagreen2")
+pvalue <- 2*(min(((sum(result <= observed)+1)/(N+1)),((sum(result >= observed)+1)/(N+1)))) 
+pvalue
+```
+
