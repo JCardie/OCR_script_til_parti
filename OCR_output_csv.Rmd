@@ -1,0 +1,63 @@
+---
+title: "OCR_output_csv"
+author: "Jonas"
+date: "11/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Jeg henter biblioteket
+```{r}
+library(tesseract)
+library(stringr)
+```
+Sætter sprog til dansk:
+```{r}
+tesseract_download("dan")
+```
+
+```{r}
+Dansk <- tesseract("dan")
+```
+
+Indput og output:
+```{r}
+input <- "parti_data"
+```
+
+```{r}
+filenames <- list.files(input, pattern="*.pdf", full.names=TRUE)
+```
+
+Indlæser csv-fil til output
+```{r}
+data <- read.csv("Parti.csv")
+```
+
+
+```{r}
+for (i in filenames)
+{name <- str_sub(strsplit(i, "/")[[1]][-1], 1, -5) #Henter filnavnet uden .pdf til sidst
+  meta_data <- strsplit(str_sub(strsplit(i, "/")[[1]][-1], 1, -5), "_")[[1]] #Vil hive meta-data ud af titel "tak ea"
+  taler <- meta_data[1]
+  tale_titel <- meta_data[2]
+  år <- meta_data[3]
+  parti <- meta_data[4]
+  pngfile <- pdftools::pdf_convert(i, dpi = 600) #konverter til png-fil så tessaract fungerer
+  text <- tesseract::ocr(pngfile, engine = Dansk) #Extract text
+  text_ud <- c()
+  for (i in text)
+  {text_ud <- paste(text_ud, i)}
+  data[nrow(data) + 1,] = c(text_ud, taler, tale_titel, år, parti)
+  unlink(pngfile)
+}
+write.csv(data, "Parti_ud.csv")
+```
+Data skulle gerne ligge i "Parti_ud.csv" på skrivebordet nu.
+```{r}
+write.csv(data, "Parti_ud.csv")
+```
+
+
