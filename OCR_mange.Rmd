@@ -1,0 +1,66 @@
+---
+ˇtitle: "OCR_Mange"
+author: "Jonas"
+date: "11/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Jeg henter biblioteket
+```{r}
+library(tesseract)
+library(stringr)
+```
+Sætter sprog til dansk:
+```{r}
+tesseract_download("dan")
+```
+```{r}
+Dansk <- tesseract("dan")
+```
+Indput og output:
+```{r}
+indput <- "Parti_data_prøve"
+output <- "Parti_data_prøve_text"
+```
+
+```{r}
+filenames <- list.files(indput, pattern="*.pdf", full.names=TRUE)
+```
+Lav mappe til materialet
+```{r}
+dir.create(output)
+```
+
+```{r}
+meta_data <- strsplit(str_sub(strsplit(filenames[1], "/")[[1]][-1], 1, -5), "_")[[1]] #Vil hive meta-data ud af titel "tak ea"
+meta_data
+```
+
+```{r}
+taler <- meta_data[1]
+tale_titel <- meta_data[2]
+år <- meta_data[3]
+parti <- meta_data[4]
+```
+
+```{r}
+for (i in filenames)
+{name <- str_sub(strsplit(i, "/")[[1]][-1], 1, -5) #Henter filnavnet uden .pdf til sidst
+  pngfile <- pdftools::pdf_convert(i, dpi = 600) #konverter til png-fil så tessaract fungerer
+  text <- tesseract::ocr(pngfile, engine = Dansk) #Extract text
+  setwd("/Users/jonascardie/Desktop/Parti_data_prøve_text") #Ændrer WD så den nye fil ender i rigtige mappe
+  cat(text ,file=paste(name, ".txt"),sep="\n")#gemmer tekstfil til mapps
+  setwd("/Users/jonascardie/Desktop")#ændrer tilbage
+  unlink(pngfile) #Sletter de oprettede png-filer
+}
+```
+```{r}
+data <- read.csv("Parti.csv")
+data[nrow(data) + 1,] = c("v1","v2", "2", "3", "4")
+data
+write.csv(data)
+```
+
